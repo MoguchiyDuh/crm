@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+.pytest_cache/
+
+# Env
+.env
+!.env.example
+
+# Node
+node_modules/
+frontend/dist/
+frontend/src/**/*.js
+frontend/*.tsbuildinfo
+
+# Alembic cache
+backend/alembic/versions/__pycache__/
+backend/alembic/__pycache__/
+
+# OS
+.DS_Store
