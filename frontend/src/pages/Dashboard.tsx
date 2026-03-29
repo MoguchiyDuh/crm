@@ -35,12 +35,10 @@ function StatCard({ label, value, sub }: { label: string; value: number | string
 
 function BarChart({
   data,
-  labelKey,
   total,
 }: {
   data: { label: string; count: number; color?: string | null }[];
   total: number;
-  labelKey?: string;
 }) {
   if (!data.length || total === 0) return null;
   return (
