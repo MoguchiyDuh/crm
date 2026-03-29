@@ -10,6 +10,7 @@ from app.models.employee import Employee
 from app.models.user import User
 from app.schemas.employee import EmployeeCreate, EmployeeOut, EmployeeUpdate
 from app.services.activity import log_activity
+from app.services.ws import manager
 from app.services.cache import EMPLOYEES_KEY, EMPLOYEES_TTL, cached, invalidate
 
 router = APIRouter(prefix="/employees", tags=["employees"])
@@ -45,6 +46,7 @@ async def create_employee(
     await db.commit()
     await db.refresh(employee)
     await invalidate(redis, EMPLOYEES_KEY)
+    await manager.broadcast("employee.created", id=employee.id)
     return employee
 
 
@@ -82,6 +84,7 @@ async def update_employee(
     await db.commit()
     await db.refresh(employee)
     await invalidate(redis, EMPLOYEES_KEY)
+    await manager.broadcast("employee.updated", id=employee_id)
     return employee
 
 
@@ -101,6 +104,7 @@ async def delete_employee(
     employee.is_active = False
     await db.commit()
     await invalidate(redis, EMPLOYEES_KEY)
+    await manager.broadcast("employee.deleted", id=employee_id)
 
 
 class LinkUserBody(BaseModel):
@@ -139,6 +143,7 @@ async def link_user(
     await db.commit()
     await db.refresh(employee)
     await invalidate(redis, EMPLOYEES_KEY)
+    await manager.broadcast("employee.updated", id=employee_id)
     return employee
 
 
@@ -161,4 +166,5 @@ async def unlink_user(
     await db.commit()
     await db.refresh(employee)
     await invalidate(redis, EMPLOYEES_KEY)
+    await manager.broadcast("employee.updated", id=employee_id)
     return employee

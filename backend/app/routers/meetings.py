@@ -11,6 +11,7 @@ from app.models.project import Project
 from app.models.user import User
 from app.schemas.meeting import MeetingCreate, MeetingOut, MeetingUpdate
 from app.services.activity import log_activity
+from app.services.ws import manager
 
 router = APIRouter(prefix="/meetings", tags=["meetings"])
 
@@ -68,6 +69,7 @@ async def create_meeting(
 
     await log_activity(db, me.id, "created", "meeting", meeting.id, meeting.title)
     await db.commit()
+    await manager.broadcast("meeting.created", id=meeting.id)
     return await _get_meeting_full(db, meeting.id)
 
 
@@ -101,6 +103,7 @@ async def update_meeting(
 
     await log_activity(db, me.id, "updated", "meeting", meeting.id, meeting.title, changed)
     await db.commit()
+    await manager.broadcast("meeting.updated", id=meeting_id)
     return await _get_meeting_full(db, meeting_id)
 
 
@@ -117,6 +120,7 @@ async def delete_meeting(
     await log_activity(db, me.id, "deleted", "meeting", meeting.id, meeting.title)
     await db.delete(meeting)
     await db.commit()
+    await manager.broadcast("meeting.deleted", id=meeting_id)
 
 
 @router.post("/{meeting_id}/participants/{employee_id}", response_model=MeetingOut)

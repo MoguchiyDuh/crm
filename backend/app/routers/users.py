@@ -7,6 +7,7 @@ from app.exceptions import BadRequest, Conflict, NotFound
 from app.models.user import User
 from app.schemas.user import UpdateMe, UserCreate, UserOut
 from app.services.activity import log_activity
+from app.services.ws import manager
 from app.services.auth import get_user_by_email, hash_password, verify_password
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -41,6 +42,7 @@ async def create_user(
     await log_activity(db, me.id, "created", "user", user.id, user.email)
     await db.commit()
     await db.refresh(user)
+    await manager.broadcast("user.created", id=user.id)
     return user
 
 
@@ -59,6 +61,7 @@ async def delete_user(
     await log_activity(db, me.id, "deleted", "user", user.id, user.email)
     await db.delete(user)
     await db.commit()
+    await manager.broadcast("user.deleted", id=user_id)
 
 
 @router.patch("/me", response_model=UserOut)

@@ -2,6 +2,7 @@ import { Activity, BarChart3, FolderKanban, LogOut, Shield, Users } from "lucide
 import { NavLink, Outlet } from "react-router-dom";
 import { SettingsModal } from "@/components/common/SettingsModal";
 import { useLogout, useMe } from "@/hooks/useAuth";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -13,13 +14,18 @@ const nav = [
 export function Layout() {
   const logout = useLogout();
   const { data: me } = useMe();
+  const { connected } = useWebSocket();
 
   return (
     <div className="flex h-screen bg-background">
       <aside className="flex w-56 flex-col border-r border-border bg-card">
         <div className="flex h-14 items-center px-4 border-b border-border">
           <BarChart3 className="h-5 w-5 mr-2 text-primary" />
-          <span className="font-semibold text-sm">CRM</span>
+          <span className="font-semibold text-sm flex-1">CRM</span>
+          <span
+            title={connected ? "Live" : "Reconnecting..."}
+            className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-muted-foreground"}`}
+          />
         </div>
         <nav className="flex-1 space-y-1 p-2 pt-4">
           {nav.map(({ to, label, icon: Icon }) => (

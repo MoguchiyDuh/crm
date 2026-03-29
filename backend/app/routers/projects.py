@@ -10,6 +10,7 @@ from app.models.project import Project
 from app.models.user import User
 from app.schemas.project import ProjectCreate, ProjectFilters, ProjectOut, ProjectUpdate
 from app.services.activity import log_activity
+from app.services.ws import manager
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -73,6 +74,7 @@ async def create_project(
     await db.flush()
     await log_activity(db, me.id, "created", "project", project.id, project.name)
     await db.commit()
+    await manager.broadcast("project.created", id=project.id)
 
     result = await db.execute(
         select(Project)
@@ -125,6 +127,7 @@ async def update_project(
 
     await log_activity(db, me.id, "updated", "project", project.id, project.name, changed)
     await db.commit()
+    await manager.broadcast("project.updated", id=project_id)
 
     result = await db.execute(
         select(Project)
@@ -152,3 +155,4 @@ async def delete_project(
     await log_activity(db, me.id, "deleted", "project", project.id, project.name)
     await db.delete(project)
     await db.commit()
+    await manager.broadcast("project.deleted", id=project_id)
