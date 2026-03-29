@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Mail, MoreHorizontal, Plus, Send, Trash2, UserCog } from "lucide-react";
+import { Link2, Link2Off, Loader2, Mail, MoreHorizontal, Plus, Send, Trash2, UserCog } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -15,18 +15,30 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/toaster";
 import {
   useCreateEmployee,
   useDeleteEmployee,
   useEmployees,
+  useLinkUser,
+  useUnlinkUser,
   useUpdateEmployee,
 } from "@/hooks/useEmployees";
+import { useMe } from "@/hooks/useAuth";
+import { useUsers } from "@/hooks/useUsers";
 import { getInitials } from "@/lib/utils";
 import type { Employee } from "@/types";
 
@@ -117,14 +129,81 @@ function EmployeeFormDialog({
   );
 }
 
+function LinkUserDialog({
+  employee,
+  onClose,
+}: {
+  employee: Employee;
+  onClose: () => void;
+}) {
+  const { data: users } = useUsers();
+  const link = useLinkUser(employee.id);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+
+  // Filter out users already linked to other employees (we don't have that info here,
+  // but the backend will reject anyway)
+  const availableUsers = users?.filter((u) => u.is_active) ?? [];
+
+  function handleSubmit() {
+    if (!selectedUserId) return;
+    link.mutate(Number(selectedUserId), {
+      onSuccess: () => { toast({ title: "User linked" }); onClose(); },
+      onError: (e: any) =>
+        toast({
+          title: e?.response?.data?.detail ?? "Link failed",
+          variant: "destructive",
+        }),
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <Label>Select user account</Label>
+        <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+          <SelectTrigger>
+            <SelectValue placeholder="Choose user..." />
+          </SelectTrigger>
+          <SelectContent>
+            {availableUsers.map((u) => (
+              <SelectItem key={u.id} value={String(u.id)}>
+                {u.email} ({u.role})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <Button
+        className="w-full"
+        disabled={!selectedUserId || link.isPending}
+        onClick={handleSubmit}
+      >
+        {link.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+        Link account
+      </Button>
+    </div>
+  );
+}
+
 function EmployeeCard({ employee }: { employee: Employee }) {
   const [editOpen, setEditOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
   const deleteEmployee = useDeleteEmployee();
+  const unlink = useUnlinkUser(employee.id);
+  const { data: me } = useMe();
+  const isAdmin = me?.role === "admin";
 
   function handleDelete() {
     deleteEmployee.mutate(employee.id, {
       onSuccess: () => toast({ title: "Employee removed" }),
       onError: () => toast({ title: "Error", variant: "destructive" }),
+    });
+  }
+
+  function handleUnlink() {
+    unlink.mutate(undefined, {
+      onSuccess: () => toast({ title: "User unlinked" }),
+      onError: () => toast({ title: "Unlink failed", variant: "destructive" }),
     });
   }
 
@@ -136,6 +215,14 @@ function EmployeeCard({ employee }: { employee: Employee }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="font-medium text-sm truncate">{employee.full_name}</p>
+          {employee.user_id && (
+            <span
+              className="inline-flex items-center gap-1 text-xs text-primary"
+              title={`Linked to user #${employee.user_id}`}
+            >
+              <Link2 className="h-3 w-3" />
+            </span>
+          )}
         </div>
         <p className="text-xs text-muted-foreground">{employee.role}</p>
         <div className="flex flex-wrap gap-2 mt-2">
@@ -164,6 +251,23 @@ function EmployeeCard({ employee }: { employee: Employee }) {
             <UserCog className="h-4 w-4 mr-2" />
             Edit
           </DropdownMenuItem>
+          {isAdmin && (
+            <>
+              <DropdownMenuSeparator />
+              {employee.user_id ? (
+                <DropdownMenuItem onClick={handleUnlink}>
+                  <Link2Off className="h-4 w-4 mr-2" />
+                  Unlink user
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={() => setLinkOpen(true)}>
+                  <Link2 className="h-4 w-4 mr-2" />
+                  Link user
+                </DropdownMenuItem>
+              )}
+            </>
+          )}
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             className="text-destructive focus:text-destructive"
             onClick={handleDelete}
@@ -180,6 +284,15 @@ function EmployeeCard({ employee }: { employee: Employee }) {
             <DialogTitle>Edit employee</DialogTitle>
           </DialogHeader>
           <EmployeeFormDialog employee={employee} onClose={() => setEditOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Link user account</DialogTitle>
+          </DialogHeader>
+          <LinkUserDialog employee={employee} onClose={() => setLinkOpen(false)} />
         </DialogContent>
       </Dialog>
     </div>

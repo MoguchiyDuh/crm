@@ -10,6 +10,7 @@ from app.models.meeting import Meeting, MeetingParticipant
 from app.models.project import Project
 from app.models.user import User
 from app.schemas.meeting import MeetingCreate, MeetingOut, MeetingUpdate
+from app.services.activity import log_activity
 
 router = APIRouter(prefix="/meetings", tags=["meetings"])
 
@@ -44,7 +45,7 @@ async def list_meetings(
 async def create_meeting(
     body: MeetingCreate,
     db: AsyncSession = Depends(db_session),
-    _: User = Depends(current_user),
+    me: User = Depends(current_user),
 ) -> Meeting:
     project = await db.get(Project, body.project_id)
     if not project:
@@ -65,6 +66,7 @@ async def create_meeting(
         if emp:
             db.add(MeetingParticipant(meeting_id=meeting.id, employee_id=emp_id))
 
+    await log_activity(db, me.id, "created", "meeting", meeting.id, meeting.title)
     await db.commit()
     return await _get_meeting_full(db, meeting.id)
 
@@ -86,16 +88,18 @@ async def update_meeting(
     meeting_id: int,
     body: MeetingUpdate,
     db: AsyncSession = Depends(db_session),
-    _: User = Depends(current_user),
+    me: User = Depends(current_user),
 ) -> Meeting:
     result = await db.execute(select(Meeting).where(Meeting.id == meeting_id))
     meeting = result.scalar_one_or_none()
     if not meeting:
         raise NotFound("Meeting")
 
-    for field, value in body.model_dump(exclude_unset=True).items():
+    changed = body.model_dump(exclude_unset=True)
+    for field, value in changed.items():
         setattr(meeting, field, value)
 
+    await log_activity(db, me.id, "updated", "meeting", meeting.id, meeting.title, changed)
     await db.commit()
     return await _get_meeting_full(db, meeting_id)
 
@@ -104,12 +108,13 @@ async def update_meeting(
 async def delete_meeting(
     meeting_id: int,
     db: AsyncSession = Depends(db_session),
-    _: User = Depends(current_user),
+    me: User = Depends(current_user),
 ) -> None:
     result = await db.execute(select(Meeting).where(Meeting.id == meeting_id))
     meeting = result.scalar_one_or_none()
     if not meeting:
         raise NotFound("Meeting")
+    await log_activity(db, me.id, "deleted", "meeting", meeting.id, meeting.title)
     await db.delete(meeting)
     await db.commit()
 

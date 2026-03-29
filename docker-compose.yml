@@ -44,6 +44,8 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
       REFRESH_TOKEN_EXPIRE_DAYS: 7
       CORS_ORIGINS: '["http://localhost:5173","http://localhost:80"]'
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -69,3 +71,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  uploads_data:

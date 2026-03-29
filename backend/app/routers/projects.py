@@ -9,6 +9,7 @@ from app.models.meeting import Meeting
 from app.models.project import Project
 from app.models.user import User
 from app.schemas.project import ProjectCreate, ProjectFilters, ProjectOut, ProjectUpdate
+from app.services.activity import log_activity
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -65,10 +66,12 @@ async def list_projects(
 async def create_project(
     body: ProjectCreate,
     db: AsyncSession = Depends(db_session),
-    _: User = Depends(current_user),
+    me: User = Depends(current_user),
 ) -> Project:
     project = Project(**body.model_dump())
     db.add(project)
+    await db.flush()
+    await log_activity(db, me.id, "created", "project", project.id, project.name)
     await db.commit()
 
     result = await db.execute(
@@ -109,16 +112,18 @@ async def update_project(
     project_id: int,
     body: ProjectUpdate,
     db: AsyncSession = Depends(db_session),
-    _: User = Depends(current_user),
+    me: User = Depends(current_user),
 ) -> Project:
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
     if not project:
         raise NotFound("Project")
 
-    for field, value in body.model_dump(exclude_unset=True).items():
+    changed = body.model_dump(exclude_unset=True)
+    for field, value in changed.items():
         setattr(project, field, value)
 
+    await log_activity(db, me.id, "updated", "project", project.id, project.name, changed)
     await db.commit()
 
     result = await db.execute(
@@ -137,12 +142,13 @@ async def update_project(
 async def delete_project(
     project_id: int,
     db: AsyncSession = Depends(db_session),
-    _: User = Depends(current_user),
+    me: User = Depends(current_user),
 ) -> None:
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
     if not project:
         raise NotFound("Project")
 
+    await log_activity(db, me.id, "deleted", "project", project.id, project.name)
     await db.delete(project)
     await db.commit()

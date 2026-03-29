@@ -6,6 +6,7 @@ from app.deps import admin_user, current_user, db_session
 from app.exceptions import BadRequest, Conflict, NotFound
 from app.models.user import User
 from app.schemas.user import UpdateMe, UserCreate, UserOut
+from app.services.activity import log_activity
 from app.services.auth import get_user_by_email, hash_password, verify_password
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -24,7 +25,7 @@ async def list_users(
 async def create_user(
     body: UserCreate,
     db: AsyncSession = Depends(db_session),
-    _: User = Depends(admin_user),
+    me: User = Depends(admin_user),
 ) -> User:
     if await get_user_by_email(db, body.email):
         raise Conflict("Email already registered")
@@ -36,6 +37,8 @@ async def create_user(
         role=body.role,
     )
     db.add(user)
+    await db.flush()
+    await log_activity(db, me.id, "created", "user", user.id, user.email)
     await db.commit()
     await db.refresh(user)
     return user
@@ -53,6 +56,7 @@ async def delete_user(
     user = result.scalar_one_or_none()
     if not user:
         raise NotFound("User")
+    await log_activity(db, me.id, "deleted", "user", user.id, user.email)
     await db.delete(user)
     await db.commit()
 

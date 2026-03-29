@@ -1,3 +1,5 @@
+from app.models.activity import ActivityLog
+from app.models.attachment import Attachment
 from app.models.employee import Employee
 from app.models.meeting import Meeting, MeetingParticipant
 from app.models.project import Project
@@ -12,4 +14,6 @@ __all__ = [
     "Project",
     "Meeting",
     "MeetingParticipant",
+    "ActivityLog",
+    "Attachment",
 ]

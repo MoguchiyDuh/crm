@@ -19,6 +19,7 @@ export interface Employee {
   email: string | null;
   is_active: boolean;
   notes: string | null;
+  user_id: number | null;
 }
 
 export interface Project {
@@ -71,4 +72,48 @@ export interface TokenResponse {
   access_token: string;
   refresh_token: string;
   token_type: string;
+}
+
+export interface ActivityLog {
+  id: number;
+  user_id: number | null;
+  user_email: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: number | null;
+  entity_name: string | null;
+  details: string | null;
+  created_at: string;
+}
+
+export interface Attachment {
+  id: number;
+  entity_type: string;
+  entity_id: number;
+  filename: string;
+  mime_type: string;
+  size: number;
+  uploaded_by_id: number | null;
+  created_at: string;
+}
+
+export interface StatusStat {
+  status: string;
+  count: number;
+}
+
+export interface PriorityStat {
+  priority: string;
+  count: number;
+  color: string | null;
+}
+
+export interface Stats {
+  projects_total: number;
+  projects_by_status: StatusStat[];
+  projects_by_priority: PriorityStat[];
+  employees_active: number;
+  meetings_total: number;
+  meetings_upcoming: number;
+  projects_overdue: number;
 }

@@ -1,4 +1,4 @@
-import { BarChart3, FolderKanban, LogOut, Shield, Users } from "lucide-react";
+import { Activity, BarChart3, FolderKanban, LogOut, Shield, Users } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { SettingsModal } from "@/components/common/SettingsModal";
 import { useLogout, useMe } from "@/hooks/useAuth";
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const nav = [
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/employees", label: "Team", icon: Users },
+  { to: "/activity", label: "Activity", icon: Activity },
 ];
 
 export function Layout() {

@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
+import { AttachmentList } from "@/components/common/AttachmentList";
 import { ProjectForm, type ProjectFormValues } from "@/components/common/ProjectForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -290,6 +291,9 @@ export function ProjectDetail() {
           </div>
         )}
       </div>
+
+      {/* Attachments */}
+      <AttachmentList projectId={projectId} />
 
       {/* Meetings */}
       <div className="space-y-3">

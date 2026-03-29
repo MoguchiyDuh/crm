@@ -21,6 +21,53 @@ import {
 import { toast } from "@/components/ui/toaster";
 import { useCreateProject, useProjects, type ProjectFilters } from "@/hooks/useProjects";
 import { usePriorities, useStatuses } from "@/hooks/useReference";
+import { useStats } from "@/hooks/useStats";
+
+function StatCard({ label, value, sub }: { label: string; value: number | string; sub?: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-4">
+      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+      <p className="text-2xl font-semibold tabular-nums">{value}</p>
+      {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+function BarChart({
+  data,
+  labelKey,
+  total,
+}: {
+  data: { label: string; count: number; color?: string | null }[];
+  total: number;
+  labelKey?: string;
+}) {
+  if (!data.length || total === 0) return null;
+  return (
+    <div className="space-y-2">
+      {data.map((item) => {
+        const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+        return (
+          <div key={item.label} className="space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">{item.label}</span>
+              <span className="tabular-nums font-medium">{item.count}</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-accent overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${pct}%`,
+                  backgroundColor: item.color ?? "hsl(var(--primary))",
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function Dashboard() {
   const [open, setOpen] = useState(false);
@@ -31,6 +78,7 @@ export function Dashboard() {
   const { data: statuses } = useStatuses();
   const { data: priorities } = usePriorities();
   const createProject = useCreateProject();
+  const { data: stats } = useStats();
 
   function handleCreate(data: ProjectFormValues) {
     createProject.mutate(data, {
@@ -46,6 +94,49 @@ export function Dashboard() {
 
   return (
     <div className="p-6 space-y-5">
+      {/* Stats */}
+      {stats && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatCard label="Total projects" value={stats.projects_total} />
+            <StatCard label="Active team" value={stats.employees_active} />
+            <StatCard
+              label="Meetings upcoming"
+              value={stats.meetings_upcoming}
+              sub={`${stats.meetings_total} total`}
+            />
+            <StatCard
+              label="Overdue"
+              value={stats.projects_overdue}
+              sub="past deadline"
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-border bg-card p-4">
+              <p className="text-xs text-muted-foreground mb-3">By status</p>
+              <BarChart
+                data={stats.projects_by_status.map((s) => ({
+                  label: s.status,
+                  count: s.count,
+                }))}
+                total={stats.projects_total}
+              />
+            </div>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <p className="text-xs text-muted-foreground mb-3">By priority</p>
+              <BarChart
+                data={stats.projects_by_priority.map((p) => ({
+                  label: p.priority,
+                  count: p.count,
+                  color: p.color,
+                }))}
+                total={stats.projects_total}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold">Projects</h1>

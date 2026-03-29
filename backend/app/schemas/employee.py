@@ -27,3 +27,4 @@ class EmployeeOut(EmployeeBase):
 
     id: int
     is_active: bool
+    user_id: int | None = None

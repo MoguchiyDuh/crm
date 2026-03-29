@@ -38,3 +38,21 @@ export function useDeleteEmployee() {
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.all }),
   });
 }
+
+export function useLinkUser(employeeId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: number) =>
+      api.post<Employee>(`/employees/${employeeId}/link`, { user_id: userId }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.all }),
+  });
+}
+
+export function useUnlinkUser(employeeId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api.delete<Employee>(`/employees/${employeeId}/link`).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.all }),
+  });
+}
