@@ -9,7 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings
 from app.redis import close_redis, get_redis
-from app.routers import activity, attachments, auth, employees, meetings, projects, reference, stats, users, ws
+from app.routers import activity, attachments, auth, employees, meetings, projects, reference, search, stats, users, ws
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -67,6 +67,7 @@ app.include_router(projects.router, prefix="/api")
 app.include_router(meetings.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(activity.router, prefix="/api")
+app.include_router(search.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 app.include_router(attachments.router, prefix="/api")
 app.include_router(ws.router)

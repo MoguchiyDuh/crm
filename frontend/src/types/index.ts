@@ -108,6 +108,25 @@ export interface PriorityStat {
   color: string | null;
 }
 
+export interface ProjectSearchResult {
+  id: number;
+  name: string;
+  client_name: string | null;
+  rank: number;
+}
+
+export interface EmployeeSearchResult {
+  id: number;
+  full_name: string;
+  role: string;
+  rank: number;
+}
+
+export interface SearchOut {
+  projects: ProjectSearchResult[];
+  employees: EmployeeSearchResult[];
+}
+
 export interface Stats {
   projects_total: number;
   projects_by_status: StatusStat[];

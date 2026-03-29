@@ -1,5 +1,7 @@
-import { Activity, BarChart3, FolderKanban, LogOut, Shield, Users } from "lucide-react";
+import { Activity, BarChart3, FolderKanban, LogOut, Search, Shield, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { SearchModal } from "@/components/common/SearchModal";
 import { SettingsModal } from "@/components/common/SettingsModal";
 import { useLogout, useMe } from "@/hooks/useAuth";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -15,6 +17,18 @@ export function Layout() {
   const logout = useLogout();
   const { data: me } = useMe();
   const { connected } = useWebSocket();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen((o) => !o);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
     <div className="flex h-screen bg-background">
@@ -27,7 +41,16 @@ export function Layout() {
             className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-muted-foreground"}`}
           />
         </div>
-        <nav className="flex-1 space-y-1 p-2 pt-4">
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="flex items-center gap-2 mx-2 mt-3 px-3 py-2 rounded-md text-xs text-muted-foreground border border-border hover:bg-accent/50 transition-colors w-[calc(100%-1rem)]"
+        >
+          <Search className="h-3.5 w-3.5 shrink-0" />
+          <span className="flex-1 text-left">Search...</span>
+          <kbd className="border border-border rounded px-1 py-0.5 text-[10px]">⌘K</kbd>
+        </button>
+
+        <nav className="flex-1 space-y-1 p-2 pt-2">
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -77,6 +100,8 @@ export function Layout() {
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
+
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }

@@ -1,7 +1,12 @@
+import os
+import subprocess
+
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text as sa_text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 from unittest.mock import patch
 
 from app.database import Base
@@ -130,3 +135,92 @@ async def member_client(client, member):
     # Return a fresh client-like object sharing the same underlying client
     client.headers["Authorization"] = f"Bearer {token}"
     return client
+
+
+# ---------------------------------------------------------------------------
+# PostgreSQL fixtures (pytest.mark.postgres)
+# ---------------------------------------------------------------------------
+
+PG_URL = os.environ.get("TEST_DATABASE_URL", "")
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _make_pg_session():
+    """New engine+session with NullPool — connection closed immediately after use."""
+    eng = create_async_engine(PG_URL, poolclass=NullPool)
+    return AsyncSession(bind=eng, expire_on_commit=False)
+
+
+@pytest.fixture(scope="session", autouse=False)
+def _pg_migrate():
+    """Run alembic migrations once per session if TEST_DATABASE_URL is set."""
+    if not PG_URL:
+        return
+    result = subprocess.run(
+        ["uv", "run", "alembic", "upgrade", "head"],
+        capture_output=True,
+        text=True,
+        cwd=_BACKEND_DIR,
+        env={**os.environ, "DATABASE_URL": PG_URL},
+    )
+    if result.returncode != 0:
+        pytest.fail(f"alembic upgrade failed:\n{result.stderr}")
+
+
+@pytest_asyncio.fixture
+async def pg_db(_pg_migrate):
+    if not PG_URL:
+        pytest.skip("TEST_DATABASE_URL not set")
+    async with _make_pg_session() as session:
+        yield session
+
+
+@pytest_asyncio.fixture(autouse=False)
+async def pg_clean(pg_db):
+    """DELETE all rows from every table after the test (NullPool = no lock contention)."""
+    yield
+    for table in reversed(Base.metadata.sorted_tables):
+        await pg_db.execute(sa_text(f"DELETE FROM {table.name}"))
+    await pg_db.commit()
+
+
+@pytest_asyncio.fixture
+async def pg_client(_pg_migrate):
+    if not PG_URL:
+        pytest.skip("TEST_DATABASE_URL not set")
+
+    async def _override_db():
+        async with _make_pg_session() as session:
+            yield session
+
+    app.dependency_overrides[db_session] = _override_db
+    app.dependency_overrides[redis_client] = override_redis
+    with patch("app.main.get_redis", _fake_get_redis):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            yield c
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def pg_admin():
+    if not PG_URL:
+        pytest.skip("TEST_DATABASE_URL not set")
+    async with _make_pg_session() as session:
+        await session.execute(sa_text("DELETE FROM users WHERE email = 'pg_admin@test.com'"))
+        await session.commit()
+        user = User(email="pg_admin@test.com", password_hash=hash_password("secret"), role="admin")
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        yield user
+        await session.execute(sa_text("DELETE FROM users WHERE email = 'pg_admin@test.com'"))
+        await session.commit()
+
+
+@pytest_asyncio.fixture
+async def pg_auth_client(pg_client, pg_admin):
+    resp = await pg_client.post("/api/auth/login", json={"email": "pg_admin@test.com", "password": "secret"})
+    assert resp.status_code == 200, resp.text
+    token = resp.json()["access_token"]
+    pg_client.headers["Authorization"] = f"Bearer {token}"
+    return pg_client

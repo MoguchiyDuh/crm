@@ -7,6 +7,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: crm
+          POSTGRES_PASSWORD: crm
+          POSTGRES_DB: crm_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,7 +36,8 @@ jobs:
       - name: Run tests
         working-directory: backend
         env:
-          DATABASE_URL: postgresql+asyncpg://unused:unused@localhost/unused
+          DATABASE_URL: postgresql+asyncpg://crm:crm@localhost:5432/crm_test
+          TEST_DATABASE_URL: postgresql+asyncpg://crm:crm@localhost:5432/crm_test
           JWT_SECRET: ci-test-secret
         run: uv run pytest tests/ -v
 
