@@ -29,6 +29,8 @@ docker-compose up --build -d
 
 Default admin account: `admin@example.com` / `admin1234`
 
+**Roles:** `admin` — full access including user management and reference data. `member` — projects, team, meetings. No public registration — accounts are created by admin.
+
 ## Project structure
 
 ```
@@ -69,6 +71,11 @@ POST   /api/auth/login          # returns access_token + refresh_token
 POST   /api/auth/refresh
 POST   /api/auth/logout
 GET    /api/auth/me
+PATCH  /api/users/me            # change own email / password
+
+GET    /api/users               # admin only
+POST   /api/users               # admin only
+DELETE /api/users/:id           # admin only
 
 GET    /api/projects            # ?status_id= &priority_id= &manager_id= &search=
 POST   /api/projects
