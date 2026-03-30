@@ -5,6 +5,7 @@ import { Activity } from "@/pages/Activity";
 import { Dashboard } from "@/pages/Dashboard";
 import { Employees } from "@/pages/Employees";
 import { Login } from "@/pages/Login";
+import { Meetings } from "@/pages/Meetings";
 import { ProjectDetail } from "@/pages/ProjectDetail";
 import { Users } from "@/pages/Users";
 
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: "projects", element: <Dashboard /> },
       { path: "projects/:id", element: <ProjectDetail /> },
       { path: "employees", element: <Employees /> },
+      { path: "meetings", element: <Meetings /> },
       { path: "users", element: <Users /> },
       { path: "activity", element: <Activity /> },
     ],

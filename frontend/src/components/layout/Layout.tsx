@@ -1,4 +1,4 @@
-import { Activity, BarChart3, FolderKanban, LogOut, Search, Shield, Users } from "lucide-react";
+import { Activity, BarChart3, CalendarDays, FolderKanban, LogOut, Search, Shield, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { SearchModal } from "@/components/common/SearchModal";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 const nav = [
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/employees", label: "Team", icon: Users },
+  { to: "/meetings", label: "Meetings", icon: CalendarDays },
   { to: "/activity", label: "Activity", icon: Activity },
 ];
 

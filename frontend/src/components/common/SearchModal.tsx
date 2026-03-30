@@ -109,7 +109,7 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
                 {data!.projects.map((p, i) => (
                   <button
                     key={p.id}
-                    onClick={() => handleSelect({ type: "project", id: p.id, label: p.name })}
+                    onClick={() => handleSelect({ type: "project", id: p.id, label: p.name, sub: p.client_name ?? undefined })}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors",
                       cursor === projectOffset + i
@@ -136,7 +136,7 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
                 {data!.employees.map((e, i) => (
                   <button
                     key={e.id}
-                    onClick={() => handleSelect({ type: "employee", id: e.id, label: e.full_name })}
+                    onClick={() => handleSelect({ type: "employee", id: e.id, label: e.full_name, sub: e.role })}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors",
                       cursor === employeeOffset + i

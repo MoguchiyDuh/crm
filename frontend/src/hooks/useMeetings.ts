@@ -29,6 +29,21 @@ export function useCreateMeeting() {
   });
 }
 
+export function useUpdateMeeting(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      title?: string;
+      scheduled_at?: string;
+      actual_at?: string | null;
+      status?: string;
+      meeting_link?: string | null;
+      notes?: string | null;
+    }) => api.patch<Meeting>(`/meetings/${id}`, data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.all }),
+  });
+}
+
 export function useDeleteMeeting() {
   const qc = useQueryClient();
   return useMutation({

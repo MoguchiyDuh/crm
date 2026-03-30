@@ -13,7 +13,7 @@ export function useWebSocket() {
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const retryDelay = useRef(1000);
-  const retryTimer = useRef<ReturnType<typeof setTimeout>>();
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const unmounted = useRef(false);
 
   const connect = useCallback(() => {
@@ -38,7 +38,7 @@ export function useWebSocket() {
         for (const key of keys) {
           qc.invalidateQueries({ queryKey: key });
         }
-      } catch {
+      } catch (_) {
         // malformed message — ignore
       }
     };
