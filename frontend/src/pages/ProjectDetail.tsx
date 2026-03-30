@@ -9,11 +9,13 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 import { AttachmentList } from "@/components/common/AttachmentList";
+import { MeetingEditDialog } from "@/components/common/MeetingEditDialog";
 import { ProjectForm, type ProjectFormValues } from "@/components/common/ProjectForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -371,18 +373,21 @@ export function ProjectDetail() {
                     </div>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={() =>
-                    deleteMeeting.mutate(meeting.id, {
-                      onSuccess: () => toast({ title: "Meeting deleted" }),
-                    })
-                  }
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <MeetingEditDialog meeting={meeting} />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={() =>
+                      deleteMeeting.mutate(meeting.id, {
+                        onSuccess: () => toast({ title: "Meeting deleted" }),
+                      })
+                    }
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

@@ -3,7 +3,6 @@ import {
   Calendar,
   ExternalLink,
   Loader2,
-  Pencil,
   Plus,
   Trash2,
   UserMinus,
@@ -14,6 +13,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
+import { MeetingEditDialog as EditMeetingDialog } from "@/components/common/MeetingEditDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +41,6 @@ import {
   useDeleteMeeting,
   useMeetings,
   useRemoveParticipant,
-  useUpdateMeeting,
 } from "@/hooks/useMeetings";
 import { useProjects } from "@/hooks/useProjects";
 import { cn, formatDate, getInitials } from "@/lib/utils";
@@ -57,19 +56,6 @@ const createSchema = z.object({
   notes: z.string().optional(),
 });
 type CreateValues = z.infer<typeof createSchema>;
-
-const editSchema = z.object({
-  title: z.string().min(1, "Required"),
-  scheduled_at: z.string().min(1, "Required"),
-  status: z.string().min(1),
-  meeting_link: z.string().url().optional().or(z.literal("")),
-  notes: z.string().optional(),
-});
-type EditValues = z.infer<typeof editSchema>;
-
-function toDatetimeLocal(iso: string) {
-  return iso.slice(0, 16);
-}
 
 function statusBadgeClass(status: string) {
   return {
@@ -179,86 +165,6 @@ function CreateMeetingDialog() {
           <Button type="submit" className="w-full" disabled={create.isPending}>
             {create.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
             Schedule
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ── Edit dialog ────────────────────────────────────────────────────────────
-
-function EditMeetingDialog({ meeting }: { meeting: Meeting }) {
-  const [open, setOpen] = useState(false);
-  const update = useUpdateMeeting(meeting.id);
-
-  const { register, handleSubmit, setValue, formState: { errors } } =
-    useForm<EditValues>({
-      resolver: zodResolver(editSchema),
-      defaultValues: {
-        title: meeting.title,
-        scheduled_at: toDatetimeLocal(meeting.scheduled_at),
-        status: meeting.status,
-        meeting_link: meeting.meeting_link ?? "",
-        notes: meeting.notes ?? "",
-      },
-    });
-
-  function onSubmit(data: EditValues) {
-    update.mutate(
-      { ...data, meeting_link: data.meeting_link || null, notes: data.notes || null },
-      {
-        onSuccess: () => { toast({ title: "Meeting updated" }); setOpen(false); },
-        onError: () => toast({ title: "Error", variant: "destructive" }),
-      }
-    );
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit meeting</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Title *</Label>
-            <Input {...register("title")} />
-            {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label>Date & time *</Label>
-            <Input type="datetime-local" {...register("scheduled_at")} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Status</Label>
-            <Select defaultValue={meeting.status} onValueChange={(v) => setValue("status", v)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Meeting link</Label>
-            <Input type="url" {...register("meeting_link")} placeholder="https://..." />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Notes</Label>
-            <Textarea rows={3} {...register("notes")} />
-          </div>
-          <Button type="submit" className="w-full" disabled={update.isPending}>
-            {update.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-            Save changes
           </Button>
         </form>
       </DialogContent>
